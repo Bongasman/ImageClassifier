@@ -57,6 +57,6 @@ def main():
 
     classifier_functions.saving_checkpoint(model, path,arch,hidden_layers,dropout,lr)
 
-    print('Finalising training.....................................Done !')
+    print('Finishing up the training process.................Done !')
 if __name__== "__main__":
     main()
