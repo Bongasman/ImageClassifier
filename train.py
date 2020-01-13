@@ -45,18 +45,19 @@ epochs = parse.epochs
 def main():
    
 
-    training_data, testing_data, validating_data = classifier_functions.load_images('./flowers/')
+   # training_data, testing_data, validating_data = classifier_functions.load_images('./flowers/')
 
-    training_loader, testing_loader, validating_loader  = classifier_functions.load_images('./flowers/')
+    training_loader, testing_loader, validating_loader, class_to_idx = classifier_functions.load_images('./flowers/')
         
     model, optimizer, criterion = classifier_functions.settings(arch,dropout,hidden_layers,lr,load_gpu)
 
 
     classifier_functions.network_trainer(model, criterion, optimizer,  training_loader, validating_loader, epochs, 20, load_gpu)
-
+    
+    model.class_to_idx = class_to_idx
 
     classifier_functions.saving_checkpoint(model, path,arch,hidden_layers,dropout,lr)
 
-    print('Finishing up the training process.................Done !')
+    print('Finalising training and saved.....................................Done !')
 if __name__== "__main__":
     main()

@@ -64,12 +64,11 @@ def load_images(data_dir  = './flowers' ):
     validating_loader = torch.utils.data.DataLoader(validating_data, batch_size =32,shuffle = True)
     #data_loaders = [training_loader, testing_loader, validating_loader]
     
-    return training_loader, testing_loader, validating_loader
+    return training_loader, testing_loader, validating_loader, training_data.class_to_idx
 
+training_data, testing_data, validating_data, training_data.class_to_idx = load_images('./flowers' )
 
-training_data, testing_data, validating_data = load_images('./flowers' )
-
-    #training_loader, testing_loader, validating_loader = load_images('./flowers' )     
+ 
    
 with open('cat_to_name.json', 'r') as f:
     cat_to_name = json.load(f)
@@ -77,18 +76,17 @@ with open('cat_to_name.json', 'r') as f:
     
 # Load pretrained  vgg network
 
-def settings(arch='vgg13',dropout=0.5, hidden_layers = 120,lr = 0.001, load_gpu='gpu'):
+def settings(arch='vgg13', load_gpu='gpu', hidden_layers = 512, dropout=0.5, lr = 0.001):
     
     input_size = 25088
-   # hidden_layers = 120
+    hidden_layers = 512
     classes = 102
     #dropout=0.5
     lr = 0.001   
     
  #   if arch == 'vgg16':
  #       model = models.vgg16(pretrained=True)
-    if arch == 'vgg13':
-         model = models.vgg13(pretrained=True)
+    model = models.vgg13(pretrained=True)
         
    
  #   else:
@@ -99,13 +97,15 @@ def settings(arch='vgg13',dropout=0.5, hidden_layers = 120,lr = 0.001, load_gpu=
         param.requires_grad = False
      
         classifier = nn.Sequential(OrderedDict([
-             ('dropout',nn.Dropout(dropout)),
-             ('inputs', nn.Linear(input_size, hidden_layers)),
+            
+             ('inputs', nn.Linear(25088, 512)),
              ('relu1', nn.ReLU()),
+             ('dropout',nn.Dropout(dropout)),
              ('hidden_layer1', nn.Linear(hidden_layers, 90)),
              ('relu2',nn.ReLU()),
              ('hidden_layer2',nn.Linear(90,80)),
              ('relu3',nn.ReLU()),
+             
              ('hidden_layer3',nn.Linear(80,classes)),
              ('output', nn.LogSoftmax(dim=1))
                                   ]))
@@ -128,7 +128,7 @@ def settings(arch='vgg13',dropout=0.5, hidden_layers = 120,lr = 0.001, load_gpu=
     
 
 
-def network_trainer(model, criterion, optimizer, training_loader, validating_loader, epochs =1, print_frequency=20,  load_gpu='gpu'):
+def network_trainer(model, criterion, optimizer, training_loader, validating_loader, epochs =5, print_frequency=20,  load_gpu='gpu'):
     
 
     steps = 0
@@ -208,9 +208,10 @@ def network_trainer(model, criterion, optimizer, training_loader, validating_loa
                 print('Running ...')
         print('Done ...')
             
-def saving_checkpoint(model, path='my_checkpoint.pth',arch ='vgg13', hidden_layers=120,dropout=0.5,lr=0.001,epochs=12):
+def saving_checkpoint(model, training_data, path='my_checkpoint.pth',arch ='vgg13', hidden_layers=120,dropout=0.5,lr=0.001,epochs=12):
 
-    model.class_to_idx = training_data.class_to_idx
+
+    
     model.cpu
 
     #Save the checkpoint 
@@ -221,29 +222,29 @@ def saving_checkpoint(model, path='my_checkpoint.pth',arch ='vgg13', hidden_laye
                   'lr':lr,
                   'nb_of_epochs':epochs,
                   'state_dict':model.state_dict(),
-                  'mapping':model.class_to_idx
+                  'class_to_idx':model.class_to_idx
                  
                  }
 
     torch.save(checkpoint, 'my_checkpoint.pth')
     
-def load_model_checkpoing(checkpoint_path='my_checkpoint.pth'):
+def load_model_checkpoint(checkpoint_path='my_checkpoint.pth'):
     checkpoint = torch.load(checkpoint_path)
     loaded_model = models.vgg13()
     hidden_layers = checkpoint['hidden_layers']
     dropout = checkpoint['dropout']
     lr=checkpoint['lr']
-    model,_,_ = settings(loaded_model , dropout,hidden_layer1,lr)
+    model,_,_ = settings(loaded_model , dropout,hidden_layers,lr)
     model.class_to_idx = checkpoint['mapping']
     model.load_state_dict(checkpoint['state_dict'])
     return model
     
-def process_image(images):
+def process_image(path_image="/home/workspace/ImageClassifier/flowers/test/10/image_07104.jpg"):
   
     # TODO: Process a PIL image for use
-    for img in images:
-        path = str(img)
-    image_pil = Image.open(img)
+   #for img in images:
+    #    path = str(img)
+    image_pil = Image.open(path_image)
    
     new_image_transforms = transforms.Compose([
         transforms.Resize(256),
@@ -257,12 +258,12 @@ def process_image(images):
     
     return new_image
 
-def predict(image_path, model, topk=5, load_gpu='gpu'):
+def predict(path_image, model, topk=5, load_gpu='gpu'):
   #Prediction
     if torch.cuda.is_available() and load_gpu =='gpu':
         model.to('cuda:0')
         print('Using Cuda....')
-    tourch_image = process_image(image_path)
+    tourch_image = process_image(path_image)
     tourch_image = tourch_image.unsqueeze_(0)
     tourch_image = tourch_image.float()
     
