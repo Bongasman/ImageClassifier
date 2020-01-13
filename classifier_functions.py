@@ -234,7 +234,7 @@ def load_model_checkpoing(checkpoint_path='my_checkpoint.pth'):
     dropout = checkpoint['dropout']
     lr=checkpoint['lr']
     model,_,_ = settings(loaded_model , dropout,hidden_layer1,lr)
-    model.class_to_idx = checkpoint['class_to_idx']
+    model.class_to_idx = checkpoint['mapping']
     model.load_state_dict(checkpoint['state_dict'])
     return model
     
